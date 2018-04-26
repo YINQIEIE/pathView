@@ -31,6 +31,7 @@ public class PathView extends View {
     //测量Path具体范围
     private RectF mPathBounds = new RectF();
     private ValueAnimator drawAnimator;
+    private float[] position = new float[2];//当前绘制点坐标
 
     public PathView(Context context) {
         this(context, null);
@@ -90,11 +91,9 @@ public class PathView extends View {
 //        canvas.restore();
     }
 
-    private float[] position = new float[2];
-
     public void starDrawPath() {
         drawAnimator = ValueAnimator.ofFloat(0, pathLength);
-        drawAnimator.setDuration(20000);
+        drawAnimator.setDuration(6000);
         drawAnimator.setInterpolator(new LinearInterpolator());
         drawAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
@@ -120,6 +119,50 @@ public class PathView extends View {
                 Log.i("position", "clipRes = " + clipRes + "x = " + position[0] + "  y = " + position[1]);
 //                invalidate();
                 postInvalidate();
+            }
+        });
+        drawAnimator.start();
+    }
+
+    private float drawLength = 0;
+
+    /**
+     * TODO 当前点画的圆出不来，待修改
+     */
+    public void starDrawPath1() {
+        drawLength = 0;
+        drawingPath.reset();
+        drawAnimator = ValueAnimator.ofFloat(0, pathLength);
+        drawAnimator.setDuration(6000);
+        drawAnimator.setInterpolator(new LinearInterpolator());
+        pathMeasure.setPath(textPath, false);
+        drawLength = pathMeasure.getLength();
+        drawAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
+            public void onAnimationUpdate(ValueAnimator animation) {
+                float animatedValue = (Float) animation.getAnimatedValue();
+                Log.i("pathView", "anim value = " + animatedValue);
+//                pathMeasure.setPath(textPath, false);
+//                drawingPath.reset();
+                //判断执行动画的长度，大于当前路径片段（一个字为一个片段）的长度，就去下一路径片段
+                //进行同样的判断，同时将上一片段的路径信息保存到 drawingPath 中，否则再次绘制前面
+                //的路径会没有
+                if (animatedValue >= drawLength) {
+//                    pathMeasure.getSegment(0, pathMeasure.getLength(), drawingPath, true);
+                    animatedValue = animatedValue - drawLength;
+                    if (pathMeasure.nextContour()) {
+                        drawLength += pathMeasure.getLength();
+//                        pathMeasure.getSegment(0, animatedValue, drawingPath, true);
+                    }
+                }
+                if (animatedValue <= drawLength) {
+//                    pathMeasure.getSegment(0, drawLength - pathMeasure.getLength(), drawingPath, true);
+                    animatedValue = animatedValue - (drawLength - pathMeasure.getLength());
+                }
+                boolean clipRes = pathMeasure.getSegment(0, animatedValue, drawingPath, true);
+                pathMeasure.getPosTan(animatedValue, position, null);
+                Log.i("position", "clipRes = " + clipRes + "x = " + position[0] + "  y = " + position[1]);
+                invalidate();
             }
         });
         drawAnimator.start();
