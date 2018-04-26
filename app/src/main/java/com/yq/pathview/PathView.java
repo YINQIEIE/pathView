@@ -103,16 +103,20 @@ public class PathView extends View {
                 Log.i("pathView", "anim value = " + animatedValue);
                 pathMeasure.setPath(textPath, false);
                 drawingPath.reset();
+                //判断执行动画的长度，大于当前路径片段（一个字为一个片段）的长度，就去下一路径片段
+                //进行同样的判断，同时将上一片段的路径信息保存到 drawingPath 中，否则再次绘制前面
+                //的路径会没有
                 while (animatedValue > pathMeasure.getLength()) {
                     Log.i("pathView", "anim value = " + animatedValue + " ;length = " + pathMeasure.getLength());
-//                    animatedValue = animatedValue - pathMeasure.getLength();
-                    pathMeasure.getSegment(0, animatedValue, drawingPath, true);
+                    animatedValue = animatedValue - pathMeasure.getLength();
+                    //获取之前几个片段路径保存在 drawingPath 中
+                    pathMeasure.getSegment(0, pathMeasure.getLength(), drawingPath, true);
                     if (!pathMeasure.nextContour()) {
                         break;
                     }
                 }
-                boolean clipRes = pathMeasure.getSegment(0, (Float) animation.getAnimatedValue(), drawingPath, true);
-                pathMeasure.getPosTan((float) animation.getAnimatedValue(), position, null);
+                boolean clipRes = pathMeasure.getSegment(0, animatedValue, drawingPath, true);
+                pathMeasure.getPosTan(animatedValue, position, null);
                 Log.i("position", "clipRes = " + clipRes + "x = " + position[0] + "  y = " + position[1]);
 //                invalidate();
                 postInvalidate();
